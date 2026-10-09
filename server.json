@@ -6,7 +6,7 @@
   "version": "0.1.0",
   "websiteUrl": "https://yetanotherbrowser.com/developers",
   "repository": {
-    "url": "https://github.com/serafimcloud/yab-mcp",
+    "url": "https://github.com/yetanotherbrowser/yab-mcp",
     "source": "github"
   },
   "icons": [

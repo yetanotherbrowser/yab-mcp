@@ -35,10 +35,10 @@
   "homepage": "https://yetanotherbrowser.com/developers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/serafimcloud/yab-mcp.git"
+    "url": "git+https://github.com/yetanotherbrowser/yab-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/serafimcloud/yab-mcp/issues"
+    "url": "https://github.com/yetanotherbrowser/yab-mcp/issues"
   },
   "license": "MIT",
   "author": "Yab (https://yetanotherbrowser.com)"

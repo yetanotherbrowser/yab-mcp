@@ -24,11 +24,11 @@ Already use Yab? Settings › Developers adds it to Claude Code and Codex with o
 The plugin brings the tools and Yab's skill:
 
 ```
-/plugin marketplace add serafimcloud/yab-mcp
+/plugin marketplace add yetanotherbrowser/yab-mcp
 /plugin install yab@yab-mcp
 ```
 
-From a shell: `claude plugin marketplace add serafimcloud/yab-mcp`, then `claude plugin install yab@yab-mcp`.
+From a shell: `claude plugin marketplace add yetanotherbrowser/yab-mcp`, then `claude plugin install yab@yab-mcp`.
 
 Only the tools:
 
@@ -43,7 +43,7 @@ If Yab's Settings › Developers already added Yab to Claude Code, skip this: yo
 The plugin, tools and skill:
 
 ```sh
-codex plugin marketplace add serafimcloud/yab-mcp
+codex plugin marketplace add yetanotherbrowser/yab-mcp
 codex plugin add yab@yab-mcp
 ```
 
@@ -113,7 +113,7 @@ In `~/.config/devin/mcp_config.json` (older Windsurf builds: `~/.codeium/windsur
 
 ### Claude Desktop
 
-Download `yab-mcp-<version>.mcpb` from [Releases](https://github.com/serafimcloud/yab-mcp/releases) and open it: Claude Desktop installs it as an extension. Or add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Download `yab-mcp-<version>.mcpb` from [Releases](https://github.com/yetanotherbrowser/yab-mcp/releases) and open it: Claude Desktop installs it as an extension. Or add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {

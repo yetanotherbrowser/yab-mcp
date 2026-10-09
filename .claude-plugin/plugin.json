@@ -8,12 +8,12 @@
     "url": "https://yetanotherbrowser.com"
   },
   "homepage": "https://yetanotherbrowser.com/developers",
-  "repository": "https://github.com/serafimcloud/yab-mcp",
+  "repository": "https://github.com/yetanotherbrowser/yab-mcp",
   "license": "MIT",
   "keywords": ["browser", "macos", "webkit", "mcp", "automation", "signed-in"],
   "icon": "./icon.png",
   "documentationUrl": "https://yetanotherbrowser.com/developers",
-  "supportUrl": "https://github.com/serafimcloud/yab-mcp/issues",
+  "supportUrl": "https://github.com/yetanotherbrowser/yab-mcp/issues",
   "privacyPolicyUrl": "https://yetanotherbrowser.com/privacy",
   "termsOfServiceUrl": "https://yetanotherbrowser.com/terms"
 }

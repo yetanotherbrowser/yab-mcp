@@ -4,8 +4,8 @@ Everything here is done by hand, in this order, unless a step says it runs in Gi
 
 ## 1. Public repositories
 
-1. Create `github.com/serafimcloud/yab-mcp` (public) and push `main`.
-2. Create `github.com/serafimcloud/homebrew-tap` (public) and push its `main` (the tap lives in `~/Documents/GitHub/homebrew-tap`).
+1. Create `github.com/yetanotherbrowser/yab-mcp` (public) and push `main`.
+2. Create `github.com/yetanotherbrowser/homebrew-tap` (public) and push its `main` (the tap lives in `~/Documents/GitHub/homebrew-tap`).
 3. Turn on Issues for both: the plugin's `supportUrl` points at this repository's issues.
 
 ## 2. npm
@@ -23,7 +23,7 @@ npm publish --access public
 
 Then on npmjs.com, `yab-mcp` › Settings › Trusted Publisher › GitHub Actions:
 
-- Organization or user: `serafimcloud`
+- Organization or user: `yetanotherbrowser`
 - Repository: `yab-mcp`
 - Workflow filename: `release.yml`
 - Environment: leave empty
@@ -97,7 +97,7 @@ Optional later: add the `.mcpb` from a GitHub release as a second package (`"reg
 Local MCP servers are listed only inside a plugin now: the directory no longer takes `.mcpb` desktop extensions. Submit this repository as a **Plugin bundle**.
 
 - Where: [claude.ai/directory/manage](https://claude.ai/directory/manage), **Submit new** › **Plugin bundle**. Needs a paid Claude plan (Pro or Max from your own account; on Team or Enterprise, an Owner) and GitHub connected on claude.ai with push access to the repository.
-- **Source**: Repository `serafimcloud/yab-mcp`; Plugin path empty (the plugin is the repository root); Branch or tag `main`, or a release tag. Then **Validate**, fix anything **Blocking**, validate again.
+- **Source**: Repository `yetanotherbrowser/yab-mcp`; Plugin path empty (the plugin is the repository root); Branch or tag `main`, or a release tag. Then **Validate**, fix anything **Blocking**, validate again.
 - **Listing details**: read from `.claude-plugin/plugin.json` and `README.md`: `name`, `displayName`, `description`, `author`, `version`, `icon` (`./icon.png`), `documentationUrl`, `supportUrl`, `privacyPolicyUrl` (`https://yetanotherbrowser.com/privacy`), `termsOfServiceUrl`, `license` and `LICENSE`. The README must have at least 40 words outside code blocks.
 - **Data handling**: whether it reads or stores personal data (it reads pages and, if allowed, mail and messages, all on the Mac; it stores nothing itself); whether it sends data to services other than its declared connectors (no; what the agent reads goes to the user's model provider, as with any tool); how long it keeps data (it keeps none; Yab's own retention is in its privacy policy); whether it's for people under 18 (no).
 - **Compliance**: a contact email, and the four acknowledgements (Software Directory Terms and Policy).
@@ -118,7 +118,7 @@ Escalations: `directory@anthropic.com` for plugin submissions.
 
 ## 7. Codex and Cursor
 
-- Codex: `codex plugin marketplace add serafimcloud/yab-mcp` reads `.agents/plugins/marketplace.json`, then `codex plugin add yab@yab-mcp` installs the portable plugin (`plugin.json` and `mcp.json`, Agent Plugins 1.0.0). Checked with Codex CLI 0.157.0. OpenAI's public plugin directory takes remote servers only.
+- Codex: `codex plugin marketplace add yetanotherbrowser/yab-mcp` reads `.agents/plugins/marketplace.json`, then `codex plugin add yab@yab-mcp` installs the portable plugin (`plugin.json` and `mcp.json`, Agent Plugins 1.0.0). Checked with Codex CLI 0.157.0. OpenAI's public plugin directory takes remote servers only.
 - Cursor: the README's button is `https://cursor.com/install-mcp?name=yab-browser&config=<base64 of {"command":"npx","args":["-y","yab-mcp"]}>` (the web form of `cursor://anysphere.cursor-deeplink/mcp/install`, which GitHub won't link). `npm run links` prints it. For cursor.directory, submit the repository there.
 
 ## 8. Lists and directories

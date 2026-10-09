@@ -12,11 +12,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/serafimcloud/yab-mcp"
+    "url": "https://github.com/yetanotherbrowser/yab-mcp"
   },
   "homepage": "https://yetanotherbrowser.com/developers",
-  "documentation": "https://github.com/serafimcloud/yab-mcp#readme",
-  "support": "https://github.com/serafimcloud/yab-mcp/issues",
+  "documentation": "https://github.com/yetanotherbrowser/yab-mcp#readme",
+  "support": "https://github.com/yetanotherbrowser/yab-mcp/issues",
   "icon": "icon.png",
   "server": {
     "type": "node",
