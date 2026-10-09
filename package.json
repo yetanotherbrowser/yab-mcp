@@ -1,0 +1,45 @@
+{
+  "name": "yab-mcp",
+  "version": "0.1.0",
+  "description": "The MCP server of Yab, Yet Another Browser: your own signed-in Mac browser for any agent. Runs `yab mcp` from the app.",
+  "mcpName": "com.yetanotherbrowser/yab",
+  "type": "module",
+  "bin": {
+    "yab-mcp": "src/cli.js"
+  },
+  "files": [
+    "src/"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "snapshot": "node scripts/snapshot.mjs",
+    "pack:mcpb": "node scripts/pack-mcpb.mjs",
+    "links": "node scripts/links.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "browser",
+    "browser-automation",
+    "macos",
+    "webkit",
+    "claude",
+    "codex",
+    "cursor",
+    "yab"
+  ],
+  "homepage": "https://yetanotherbrowser.com/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/serafimcloud/yab-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/serafimcloud/yab-mcp/issues"
+  },
+  "license": "MIT",
+  "author": "Yab (https://yetanotherbrowser.com)"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "yab-mcp",
+  "description": "Yab, Yet Another Browser, for Claude Code: its MCP server and skill.",
+  "owner": {
+    "name": "Yab",
+    "url": "https://yetanotherbrowser.com"
+  },
+  "plugins": [
+    {
+      "name": "yab",
+      "source": "./",
+      "description": "Your own signed-in browser on the Mac for Claude: Yab's tools and its skill."
+    }
+  ]
+}

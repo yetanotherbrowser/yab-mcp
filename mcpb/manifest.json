@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/schemas/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "yab-mcp",
+  "display_name": "Yab, Yet Another Browser",
+  "version": "set by scripts/pack-mcpb.mjs",
+  "description": "Your own signed-in Mac browser for Claude: open, read and act in tabs of Yab, Yet Another Browser. Local and free.",
+  "long_description": "Yab, Yet Another Browser, is a free WebKit browser for the Mac. This extension runs Yab's own MCP server (`yab mcp`), so Claude opens tabs of its own beside yours, reads pages as text, clicks, types and fills forms with your sign-ins. A press on Send, Pay, Delete and the like waits for your yes on a card in Yab, unless you chose Bypass in Yab's settings. Saved passwords are filled by Yab and never shown to Claude. With Yab closed, the first call opens it hidden. Needs Yab on macOS 15.4 or later, with Settings › AI › Agents › Let agents use Yab turned on. Without Yab, every tool says how to get it.",
+  "author": {
+    "name": "Yab",
+    "url": "https://yetanotherbrowser.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/serafimcloud/yab-mcp"
+  },
+  "homepage": "https://yetanotherbrowser.com/developers",
+  "documentation": "https://github.com/serafimcloud/yab-mcp#readme",
+  "support": "https://github.com/serafimcloud/yab-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "src/cli.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/src/cli.js"]
+    }
+  },
+  "tools": [],
+  "tools_generated": true,
+  "keywords": ["browser", "macos", "webkit", "automation", "signed-in", "tabs"],
+  "license": "MIT",
+  "privacy_policies": ["https://yetanotherbrowser.com/privacy"],
+  "compatibility": {
+    "platforms": ["darwin"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

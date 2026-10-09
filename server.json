@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.yetanotherbrowser/yab",
+  "title": "Yab, Yet Another Browser",
+  "description": "Your own signed-in Mac browser for any agent: open, read and act in tabs. Local and free.",
+  "version": "0.1.0",
+  "websiteUrl": "https://yetanotherbrowser.com/developers",
+  "repository": {
+    "url": "https://github.com/serafimcloud/yab-mcp",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://yetanotherbrowser.com/app-icon.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "yab-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

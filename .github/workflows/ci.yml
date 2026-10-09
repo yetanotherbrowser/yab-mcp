@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        node: [18, 22]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+      - name: The CLI answers without Yab
+        run: |
+          node src/cli.js --version
+          node src/cli.js --help
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Claude Code plugin and marketplace
+        run: |
+          npx -y @anthropic-ai/claude-code@latest plugin validate --strict .
+          npx -y @anthropic-ai/claude-code@latest plugin validate --strict .claude-plugin/plugin.json
+      - name: Desktop extension
+        run: npm run pack:mcpb

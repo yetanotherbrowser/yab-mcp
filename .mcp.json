@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yab-browser": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/src/cli.js"]
+    }
+  }
+}

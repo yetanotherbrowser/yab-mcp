@@ -1,0 +1,31 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "yab",
+  "version": "0.1.0",
+  "description": "Your own signed-in browser on the Mac for any agent: open, read and act in tabs of Yab, Yet Another Browser. Local and free; the yes before Send, Pay and Delete is held by the browser.",
+  "author": {
+    "name": "Yab",
+    "url": "https://yetanotherbrowser.com"
+  },
+  "homepage": "https://yetanotherbrowser.com/developers",
+  "repository": "https://github.com/serafimcloud/yab-mcp",
+  "license": "MIT",
+  "keywords": ["browser", "macos", "webkit", "mcp", "automation", "signed-in"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Yab, Yet Another Browser",
+        "shortDescription": "Your own signed-in browser on the Mac",
+        "longDescription": "Yab's tools and skill: open, read and act in tabs of Yab, Yet Another Browser, with your sign-ins. The yes before Send, Pay and Delete is held by the browser. Needs Yab on macOS 15.4 or later.",
+        "developerName": "Yab",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://yetanotherbrowser.com/developers",
+        "privacyPolicyURL": "https://yetanotherbrowser.com/privacy",
+        "termsOfServiceURL": "https://yetanotherbrowser.com/terms",
+        "composerIcon": "./icon.png",
+        "logo": "./icon.png"
+      }
+    }
+  }
+}
