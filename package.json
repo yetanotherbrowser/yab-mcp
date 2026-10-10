@@ -1,6 +1,6 @@
 {
   "name": "yab-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The MCP server of Yab, Yet Another Browser: your own signed-in Mac browser for any agent. Runs `yab mcp` from the app.",
   "mcpName": "com.yetanotherbrowser/yab",
   "type": "module",
