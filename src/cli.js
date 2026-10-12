@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { findYab } from "./find.js";
 import { forward } from "./forward.js";
 import { DOWNLOAD, DEVELOPERS, reason, serveFallback } from "./fallback.js";
+import { finishLogin, login, origin, runTask, serveRemote } from "./remote.js";
 
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -30,6 +31,9 @@ Usage:
   npx -y yab-mcp           Start the MCP server on stdio (an MCP client runs this)
   npx yab-mcp --help       Show this help and where Yab is
   npx yab-mcp --version    Show the version of yab-mcp
+  npx yab-mcp login --client dots --nonce NONCE  Link this assistant's computer to Yab
+  npx yab-mcp --remote      Serve remote Yab tools over stdio
+  npx yab-mcp task WORDS    Give remote Yab a task
 
 ${where}
 
@@ -39,11 +43,43 @@ each call says how to get Yab.
 
 Environment:
   YAB_APP   The path to yab.app, when it isn't in Applications
+  YAB_MCP_URL   Remote Yab server (HTTPS, or localhost for tests)
 
 Download: ${DOWNLOAD}
 More:     ${DEVELOPERS}
 `);
   process.exit(0);
+}
+
+if (args[0] === "login" || args[0] === "task" || args.includes("--remote")) {
+  const value = (flag) => {
+    const index = args.indexOf(flag);
+    if (index < 0) return undefined;
+    if (!args[index + 1] || args[index + 1].startsWith("--")) throw new Error(`${flag} needs a value.`);
+    return args[index + 1];
+  };
+  try {
+    if (args[0] === "login" && args[1] === "--complete") {
+      const pending = JSON.parse(readFileSync(0, "utf8"));
+      await finishLogin(pending);
+      process.exit();
+    }
+    const server = origin(value("--server"));
+    if (args[0] === "login") {
+      const allowed = new Set(["login", "--client", "--nonce", "--server"]);
+      if (args.some((word) => word.startsWith("--") && !allowed.has(word))) throw new Error("Unknown login option.");
+      await login({ server, client: value("--client") || "yab-mcp", nonce: value("--nonce"), background: true });
+    } else if (args[0] === "task") {
+      const words = args.slice(1).filter((word, index, list) => word !== "--server" && (index === 0 || list[index - 1] !== "--server"));
+      await runTask(words.join(" "), { server });
+    } else {
+      await serveRemote({ server });
+    }
+  } catch (error) {
+    process.stderr.write(`yab-mcp: ${error.message}\n`);
+    process.exitCode = 1;
+  }
+  process.exit();
 }
 
 function fallback(why) {

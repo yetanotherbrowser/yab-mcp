@@ -6,6 +6,19 @@ Yab, Yet Another Browser, is a free WebKit browser for the Mac. With this server
 
 [Download Yab](https://yetanotherbrowser.com/dl?ref=github) · [For developers](https://yetanotherbrowser.com/developers) · [Manual](https://yetanotherbrowser.com/manual)
 
+## Remote assistants (0.2.0 preview)
+
+On the assistant's own computer, run `npx yab-mcp login --client dots --nonce NONCE`.
+It prints the code and returns immediately; a background process saves the
+connection after the person allows it in Yab.
+Yab on the Mac shows the eight-character code under Settings > AI > Assistants.
+After the person allows it there, use `npx yab-mcp --remote` as a stdio MCP server,
+or `npx yab-mcp task "Find a table for Friday"` to give Yab one task.
+The connection token stays in `~/.config/yab-mcp/auth.json` (mode 0600).
+`YAB_MCP_URL` selects a test server; production uses `https://assist.yetanotherbrowser.com`.
+Without `--remote`, this package still uses the local Yab app exactly as before.
+The remote service is not deployed yet.
+
 ## Requirements
 
 - A Mac with macOS 15.4 or later.
