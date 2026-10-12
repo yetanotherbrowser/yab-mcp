@@ -71,6 +71,39 @@ test("shell-only bots can check a task by session or use their newest", async ()
   }
 });
 
+test("the status CLI prints a remote task's next update", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-status-cli-"));
+  const file = join(dir, "auth.json");
+  let requested;
+  const server = createServer(async (request, response) => {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    requested = JSON.parse(body);
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { content: [{ type: "text", text: "state: done" }] } }));
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  try {
+    const address = server.address();
+    const base = `http://127.0.0.1:${address.port}`;
+    await writeFile(file, JSON.stringify({ origin: base, client_id: "dots", access_token: "access",
+      refresh_token: "refresh", expires_at: Date.now() + 3_600_000 }), { mode: 0o600 });
+    const child = spawn(process.execPath, [new URL("../src/cli.js", import.meta.url).pathname,
+      "status", "session-1", "--server", base],
+    { env: { ...process.env, YAB_MCP_AUTH_FILE: file }, stdio: ["ignore", "pipe", "pipe"] });
+    let output = "";
+    child.stdout.on("data", (chunk) => { output += chunk; });
+    const [code] = await once(child, "exit");
+    assert.equal(code, 0);
+    assert.equal(output, "state: done\n");
+    assert.deepEqual(requested.params, { name: "task_status", arguments: { session: "session-1" } });
+  } finally {
+    server.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("bot login returns its code before the person approves", async () => {
   let said = "", handed = "", detached = false, polls = 0;
   const fetcher = async (url) => {
