@@ -9,7 +9,7 @@ import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const DEFAULT_ORIGIN = "https://assist.yetanotherbrowser.com";
+const DEFAULT_ORIGIN = "https://yab-sync.21st.workers.dev";
 const GRANT = "urn:ietf:params:oauth:grant-type:device_code";
 const PROTOCOL = "2025-06-18";
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
