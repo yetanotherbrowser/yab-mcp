@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { findYab } from "./find.js";
 import { forward } from "./forward.js";
 import { DOWNLOAD, DEVELOPERS, reason, serveFallback } from "./fallback.js";
-import { finishLogin, login, origin, runTask, serveRemote } from "./remote.js";
+import { finishLogin, login, origin, runTask, serveRemote, taskStatus } from "./remote.js";
 
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -34,6 +34,7 @@ Usage:
   npx yab-mcp login --client dots --nonce NONCE  Link this assistant's computer to Yab
   npx yab-mcp --remote      Serve remote Yab tools over stdio
   npx yab-mcp task WORDS    Give remote Yab a task
+  npx yab-mcp status [SESSION]  Check a remote task; omit SESSION for the newest
 
 ${where}
 
@@ -51,7 +52,7 @@ More:     ${DEVELOPERS}
   process.exit(0);
 }
 
-if (args[0] === "login" || args[0] === "task" || args.includes("--remote")) {
+if (args[0] === "login" || args[0] === "task" || args[0] === "status" || args.includes("--remote")) {
   const value = (flag) => {
     const index = args.indexOf(flag);
     if (index < 0) return undefined;
@@ -72,6 +73,10 @@ if (args[0] === "login" || args[0] === "task" || args.includes("--remote")) {
     } else if (args[0] === "task") {
       const words = args.slice(1).filter((word, index, list) => word !== "--server" && (index === 0 || list[index - 1] !== "--server"));
       await runTask(words.join(" "), { server });
+    } else if (args[0] === "status") {
+      const values = args.slice(1).filter((word, index, list) => word !== "--server" && (index === 0 || list[index - 1] !== "--server"));
+      if (values.length > 1) throw new Error("Give one session id, or omit it for the newest task.");
+      await taskStatus(values[0], { server });
     } else {
       await serveRemote({ server });
     }

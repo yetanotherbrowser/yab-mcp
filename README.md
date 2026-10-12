@@ -14,6 +14,9 @@ connection after the person allows it in Yab.
 Yab on the Mac shows the eight-character code under Settings > AI > Assistants.
 After the person allows it there, use `npx yab-mcp --remote` as a stdio MCP server,
 or `npx yab-mcp task "Find a table for Friday"` to give Yab one task.
+The task command prints its session ID and returns; a shell-only assistant can
+run `npx yab-mcp status SESSION` to wait for the next update, or omit SESSION
+to check its newest task after a Mac reconnects. Repeat until it says done.
 The connection token stays in `~/.config/yab-mcp/auth.json` (mode 0600).
 `YAB_MCP_URL` selects a test server; production uses `https://assist.yetanotherbrowser.com`.
 Without `--remote`, this package still uses the local Yab app exactly as before.

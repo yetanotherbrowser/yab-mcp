@@ -166,13 +166,21 @@ export async function serveRemote(options = {}) {
   await Promise.allSettled(pending);
 }
 
-export async function runTask(words, options = {}) {
-  if (!words.trim()) throw new Error("Give a task after yab-mcp task.");
+async function runTool(name, args, options) {
   const response = await remoteCall({ jsonrpc: "2.0", id: 1, method: "tools/call",
-    params: { name: "task", arguments: { prompt: words } } }, options);
+    params: { name, arguments: args } }, options);
   if (response?.error) throw new Error(response.error.message || "The task failed.");
   const content = response?.result?.content || [];
   const text = content.filter((item) => item.type === "text").map((item) => item.text).join("\n");
-  process.stdout.write(text + "\n");
+  (options.write || process.stdout.write.bind(process.stdout))(text + "\n");
   if (response?.result?.isError) process.exitCode = 1;
+}
+
+export async function runTask(words, options = {}) {
+  if (!words.trim()) throw new Error("Give a task after yab-mcp task.");
+  await runTool("task", { prompt: words }, options);
+}
+
+export async function taskStatus(session, options = {}) {
+  await runTool("task_status", session ? { session } : {}, options);
 }

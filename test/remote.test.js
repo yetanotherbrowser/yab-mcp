@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, stat, rm } from "node:fs/promises";
+import { mkdtemp, readFile, stat, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { login, origin, remoteCall } from "../src/remote.js";
+import { login, origin, remoteCall, taskStatus } from "../src/remote.js";
 
 test("remote origin requires HTTPS, except localhost", () => {
   assert.equal(origin("https://assist.example"), "https://assist.example");
@@ -43,6 +43,32 @@ test("device login binds a nonce, saves a private token, and sends an MCP call",
 
 test("a mismatched nonce is rejected before the login request", async () => {
   await assert.rejects(login({ nonce: "short", fetcher: () => { throw new Error("called"); } }), /nonce/);
+});
+
+test("shell-only bots can check a task by session or use their newest", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-status-"));
+  const file = join(dir, "auth.json");
+  const seen = [];
+  const fetcher = async (_url, init) => {
+    const request = JSON.parse(init.body);
+    seen.push(request.params);
+    return Response.json({ jsonrpc: "2.0", id: 1, result: { content: [{ type: "text", text: "state: done" }] } });
+  };
+  try {
+    await writeFile(file, JSON.stringify({ origin: "https://assist.example", client_id: "dots",
+      access_token: "access", refresh_token: "refresh", expires_at: Date.now() + 3_600_000 }), { mode: 0o600 });
+    let said = "";
+    const options = { server: "https://assist.example", file, fetcher, write: (part) => { said += part; } };
+    await taskStatus("session-1", options);
+    await taskStatus(undefined, options);
+    assert.deepEqual(seen, [
+      { name: "task_status", arguments: { session: "session-1" } },
+      { name: "task_status", arguments: {} },
+    ]);
+    assert.equal(said, "state: done\nstate: done\n");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("bot login returns its code before the person approves", async () => {
