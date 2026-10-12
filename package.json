@@ -1,6 +1,6 @@
 {
   "name": "yab-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The MCP server of Yab, Yet Another Browser: use Yab locally or connect a cloud assistant to your Mac.",
   "mcpName": "com.yetanotherbrowser/yab",
   "type": "module",

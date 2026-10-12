@@ -2,7 +2,8 @@
 // HTTP bridge. Tokens belong to this assistant's cloud computer, never to
 // the person's Yab Sync account or its encryption key.
 import { createInterface } from "node:readline";
-import { mkdir, readFile, rename, writeFile, chmod } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile, chmod, unlink } from "node:fs/promises";
+import { openSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
@@ -35,6 +36,19 @@ async function saveAuth(auth, file = authFile()) {
   await rename(temp, file);
 }
 
+/// Fails now, while the bot is still listening, rather than in the
+/// background worker after the person has already allowed it.
+async function checkWritable(file) {
+  const probe = file + "." + randomBytes(6).toString("hex") + ".probe";
+  try {
+    await mkdir(dirname(file), { recursive: true, mode: 0o700 });
+    await writeFile(probe, "", { mode: 0o600 });
+    await unlink(probe);
+  } catch (error) {
+    throw new Error(`Can't save the connection in ${dirname(file)} (${error.code || error.message}). Set YAB_MCP_AUTH_FILE to a writable path and run login again.`);
+  }
+}
+
 async function loadAuth(file = authFile()) {
   try { return JSON.parse(await readFile(file, "utf8")); }
   catch { return null; }
@@ -54,6 +68,7 @@ export async function login({ server = origin(), client = "yab-mcp", nonce, fetc
   if (!/^[A-Za-z0-9._-]{1,64}$/.test(client)) throw new Error("Client name must use letters, digits, dots, dashes or underscores.");
   if (nonce && !/^[A-Za-z0-9_-]{16,64}$/.test(nonce)) throw new Error("Connection nonce is invalid.");
   const base = origin(server);
+  await checkWritable(file);
   const issued = await form(base, "/oauth/device", { client_id: client, ...(nonce ? { nonce } : {}) }, fetcher);
   if (issued.status !== 200 || !issued.body.device_code || !issued.body.user_code) {
     throw new Error(issued.body.error_description || issued.body.error || `The server answered ${issued.status}.`);
@@ -66,7 +81,7 @@ export async function login({ server = origin(), client = "yab-mcp", nonce, fetc
                     until: Date.now() + Math.min(600, Number(d.expires_in) || 600) * 1000, file };
   if (background) {
     const worker = spawnWorker(process.execPath, [fileURLToPath(new URL("./cli.js", import.meta.url)), "login", "--complete"],
-                               { detached: true, stdio: ["pipe", "ignore", "ignore"] });
+                               { detached: true, stdio: ["pipe", "ignore", workerLog(file)] });
     await new Promise((resolve, reject) => {
       worker.stdin.on("error", reject);
       worker.stdin.end(JSON.stringify(pending), resolve);
@@ -76,6 +91,11 @@ export async function login({ server = origin(), client = "yab-mcp", nonce, fetc
     return;
   }
   await finishLogin(pending, { fetcher, sleep, write });
+}
+
+// What the background worker says, if it fails, lands beside the token.
+function workerLog(file) {
+  try { return openSync(file + ".log", "w", 0o600); } catch { return "ignore"; }
 }
 
 /// Called by the detached CLI worker after the shell command has already
@@ -99,21 +119,33 @@ export async function finishLogin(pending, { fetcher = fetch, sleep = pause, wri
   throw new Error("The code expired. Run yab-mcp login again.");
 }
 
+// One refresh at a time per file: a refresh token works once, so two calls
+// refreshing together would log the second one out.
+const refreshing = new Map();
+
 async function usableAuth(server, fetcher, file) {
   const auth = await loadAuth(file);
   if (!auth || auth.origin !== server || !auth.access_token || !auth.refresh_token || !auth.client_id) {
     throw new Error("Yab is not connected here. Run yab-mcp login in this assistant's computer.");
   }
   if (Date.now() < (auth.expires_at || 0) - 60_000) return auth;
-  const refreshed = await form(server, "/oauth/token", { grant_type: "refresh_token", refresh_token: auth.refresh_token,
-                                                         client_id: auth.client_id }, fetcher);
-  if (refreshed.status !== 200 || !refreshed.body.access_token || !refreshed.body.refresh_token) {
-    throw new Error("Yab's connection expired or was removed. Run yab-mcp login again.");
-  }
-  const next = { ...auth, access_token: refreshed.body.access_token, refresh_token: refreshed.body.refresh_token,
-                 expires_at: Date.now() + Number(refreshed.body.expires_in || 0) * 1000 };
-  await saveAuth(next, file);
-  return next;
+  if (refreshing.has(file)) return refreshing.get(file);
+  const work = (async () => {
+    const refreshed = await form(server, "/oauth/token", { grant_type: "refresh_token", refresh_token: auth.refresh_token,
+                                                           client_id: auth.client_id }, fetcher);
+    if (refreshed.status !== 200 || !refreshed.body.access_token || !refreshed.body.refresh_token) {
+      // Another process may have refreshed it first.
+      const now = await loadAuth(file);
+      if (now && now.refresh_token !== auth.refresh_token && Date.now() < (now.expires_at || 0) - 60_000) return now;
+      throw new Error("Yab's connection expired or was removed. Run yab-mcp login again.");
+    }
+    const next = { ...auth, access_token: refreshed.body.access_token, refresh_token: refreshed.body.refresh_token,
+                   expires_at: Date.now() + Number(refreshed.body.expires_in || 0) * 1000 };
+    await saveAuth(next, file);
+    return next;
+  })();
+  refreshing.set(file, work);
+  try { return await work; } finally { refreshing.delete(file); }
 }
 
 export async function remoteCall(body, { server = origin(), fetcher = fetch, file = authFile() } = {}) {

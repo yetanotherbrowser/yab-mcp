@@ -158,3 +158,42 @@ test("CLI returns the code while its detached worker saves the token", async () 
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("login fails at once, before asking for a code, when the token can't be saved", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-ro-"));
+  const blocker = join(dir, "not-a-folder");
+  await writeFile(blocker, "");
+  try {
+    await assert.rejects(
+      login({ server: "https://assist.example", client: "dots", file: join(blocker, "auth.json"), fetcher: () => { throw new Error("called"); } }),
+      /Can't save the connection/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("two calls past expiry refresh once, so neither is logged out", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-refresh-"));
+  const file = join(dir, "auth.json");
+  let refreshes = 0;
+  const fetcher = async (url, init) => {
+    if (url.endsWith("/oauth/token")) {
+      refreshes += 1;
+      if (new URLSearchParams(init.body).get("refresh_token") !== "refresh") return Response.json({ error: "invalid_grant" }, { status: 400 });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return Response.json({ access_token: "access2", refresh_token: "refresh2", expires_in: 3600 });
+    }
+    return Response.json({ jsonrpc: "2.0", id: 1, result: { ok: init.headers.authorization } });
+  };
+  try {
+    await writeFile(file, JSON.stringify({ origin: "https://assist.example", client_id: "dots",
+      access_token: "old", refresh_token: "refresh", expires_at: 0 }), { mode: 0o600 });
+    const call = () => remoteCall({ jsonrpc: "2.0", id: 1, method: "tools/list" }, { server: "https://assist.example", file, fetcher });
+    const [a, b] = await Promise.all([call(), call()]);
+    assert.equal(refreshes, 1);
+    assert.equal(a.result.ok, "Bearer access2");
+    assert.equal(b.result.ok, "Bearer access2");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
