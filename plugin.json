@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "yab",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Your own signed-in browser on the Mac for any agent: open, read and act in tabs of Yab, Yet Another Browser. Local and free; the yes before Send, Pay and Delete is held by the browser.",
   "author": {
     "name": "Yab",

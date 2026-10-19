@@ -18,7 +18,11 @@ The task command prints its session ID and returns; a shell-only assistant can
 run `npx yab-mcp status SESSION` to wait for the next update, or omit SESSION
 to check its newest task after a Mac reconnects. Repeat until it says done.
 The connection token stays in `~/.config/yab-mcp/auth.json` (mode 0600), or the
-path in `YAB_MCP_AUTH_FILE`.
+path in `YAB_MCP_AUTH_FILE`. When the home folder is read-only, as on some bots'
+computers, it goes to the first writable of `/workspace/shared/.yab-mcp/`,
+`/workspace/.yab-mcp/` and `.yab-mcp/` in the current folder. If the computer
+ends the background process that waits for the person's Allow, the next
+`task`, `status` or `--remote` finishes connecting.
 `YAB_MCP_URL` selects a test server; production uses `https://yab-sync.21st.workers.dev`.
 Without `--remote`, this package still uses the local Yab app exactly as before.
 

@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { login, origin, remoteCall, taskStatus } from "../src/remote.js";
+import { authFile, authPlaces, login, origin, remoteCall, taskStatus } from "../src/remote.js";
 
 test("remote origin requires HTTPS, except localhost", () => {
   assert.equal(origin("https://assist.example"), "https://assist.example");
@@ -105,6 +105,7 @@ test("the status CLI prints a remote task's next update", async () => {
 });
 
 test("bot login returns its code before the person approves", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-bot-"));
   let said = "", handed = "", detached = false, polls = 0;
   const fetcher = async (url) => {
     if (url.endsWith("/oauth/device")) return Response.json({ device_code: "private-device-code", user_code: "ABCD-1234",
@@ -117,8 +118,12 @@ test("bot login returns its code before the person approves", async () => {
     assert.equal(options.detached, true);
     return { stdin: { on: () => {}, end: (data, done) => { handed = data; done(); } }, unref: () => { detached = true; } };
   };
-  await login({ server: "https://assist.example", client: "dots", nonce: "abcdefghijklmnop",
-                background: true, fetcher, spawnWorker, write: (part) => { said += part; } });
+  try {
+    await login({ server: "https://assist.example", client: "dots", nonce: "abcdefghijklmnop", file: join(dir, "auth.json"),
+                  background: true, fetcher, spawnWorker, write: (part) => { said += part; } });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
   assert.match(said, /ABCD-1234/);
   assert.equal(polls, 0);
   assert.equal(JSON.parse(handed).device_code, "private-device-code");
@@ -194,6 +199,55 @@ test("two calls past expiry refresh once, so neither is logged out", async () =>
     assert.equal(a.result.ok, "Bearer access2");
     assert.equal(b.result.ok, "Bearer access2");
   } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a login whose worker was ended is finished by the next call", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-ended-"));
+  const file = join(dir, "auth.json");
+  let allowed = false;
+  const fetcher = async (url) => {
+    if (url.endsWith("/oauth/device")) return Response.json({ device_code: "device", user_code: "ABCD-1234",
+      verification_uri: "https://assist.example/connect", interval: 1, expires_in: 600 });
+    if (url.endsWith("/oauth/token")) return allowed
+      ? Response.json({ access_token: "access", refresh_token: "refresh", expires_in: 3600 })
+      : Response.json({ error: "authorization_pending" }, { status: 400 });
+    if (url.endsWith("/mcp")) return Response.json({ jsonrpc: "2.0", id: 1, result: { tools: [] } });
+    throw new Error(url);
+  };
+  // The bot's computer ends the worker with the command: it never polls.
+  const spawnWorker = () => ({ stdin: { on: () => {}, end: (_data, done) => done() }, unref: () => {} });
+  const sleep = async () => {};
+  try {
+    await login({ server: "https://assist.example", client: "dots", nonce: "abcdefghijklmnop", file,
+                  background: true, fetcher, spawnWorker, write: () => {} });
+    assert.equal((await stat(file + ".pending")).mode & 0o777, 0o600);
+    await assert.rejects(remoteCall({ jsonrpc: "2.0", id: 1, method: "tools/list" },
+      { server: "https://assist.example", fetcher, file, pending: { sleep, wait: 50 } }), /ABCD-1234.*Allow/);
+    allowed = true;
+    const answer = await remoteCall({ jsonrpc: "2.0", id: 1, method: "tools/list" },
+      { server: "https://assist.example", fetcher, file, pending: { sleep } });
+    assert.deepEqual(answer.result, { tools: [] });
+    assert.equal(JSON.parse(await readFile(file, "utf8")).access_token, "access");
+    await assert.rejects(stat(file + ".pending"));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("the token goes to the first writable place and is found there again", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "yab-mcp-places-"));
+  const saved = process.env.YAB_MCP_AUTH_FILE;
+  delete process.env.YAB_MCP_AUTH_FILE;
+  try {
+    const home = join(dir, "home"), shared = join(dir, "shared");
+    await writeFile(join(dir, "home"), "");  // a home that can't hold folders, as a read-only one
+    const places = [join(home, ".config", "yab-mcp", "auth.json"), join(shared, ".yab-mcp", "auth.json")];
+    assert.equal(authFile(places), places[1]);
+    assert.equal(authPlaces("/home/agent", "/work").includes("/workspace/shared/.yab-mcp/auth.json"), true);
+  } finally {
+    if (saved !== undefined) process.env.YAB_MCP_AUTH_FILE = saved;
     await rm(dir, { recursive: true, force: true });
   }
 });

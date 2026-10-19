@@ -3,7 +3,7 @@
 // the person's Yab Sync account or its encryption key.
 import { createInterface } from "node:readline";
 import { mkdir, readFile, rename, writeFile, chmod, unlink } from "node:fs/promises";
-import { openSync } from "node:fs";
+import { accessSync, constants, existsSync, openSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { randomBytes } from "node:crypto";
@@ -24,9 +24,34 @@ export function origin(value = process.env.YAB_MCP_URL || DEFAULT_ORIGIN) {
   return url.origin;
 }
 
-export function authFile() {
-  return process.env.YAB_MCP_AUTH_FILE || join(homedir(), ".config", "yab-mcp", "auth.json");
+// Where the token may live, in order. A bot's computer may keep its home
+// read-only (dots: /home/agent) and its work in a shared folder that every
+// worker sees (/workspace/shared), so the first writable one is used, and an
+// existing connection is found wherever an earlier login put it.
+export function authPlaces(home = homedir(), cwd = process.cwd()) {
+  return [join(home, ".config", "yab-mcp", "auth.json"), "/workspace/shared/.yab-mcp/auth.json",
+          "/workspace/.yab-mcp/auth.json", join(cwd, ".yab-mcp", "auth.json")];
 }
+
+function writableDir(dir) {
+  for (let at = dir; ; at = dirname(at)) {
+    if (existsSync(at)) {
+      try { accessSync(at, constants.W_OK); return statSync(at).isDirectory(); } catch { return false; }
+    }
+    if (dirname(at) === at) return false;
+  }
+}
+
+export function authFile(places = authPlaces()) {
+  if (process.env.YAB_MCP_AUTH_FILE) return process.env.YAB_MCP_AUTH_FILE;
+  const kept = places.find((file) => existsSync(file) || existsSync(file + ".pending"));
+  return kept || places.find((file) => writableDir(dirname(file))) || places[0];
+}
+
+// A login waiting for the person's Allow, kept beside the token: a bot's
+// computer may end the background worker with the command that started it,
+// so the next yab-mcp command finishes the login instead.
+function pendingFile(file) { return file + ".pending"; }
 
 async function saveAuth(auth, file = authFile()) {
   await mkdir(dirname(file), { recursive: true, mode: 0o700 });
@@ -79,6 +104,7 @@ export async function login({ server = origin(), client = "yab-mcp", nonce, fetc
   if (nonce) write(`Connection nonce: ${nonce}\n`);
   const pending = { server: base, client, device_code: d.device_code, interval: d.interval,
                     until: Date.now() + Math.min(600, Number(d.expires_in) || 600) * 1000, file };
+  await saveAuth({ ...pending, user_code: d.user_code }, pendingFile(file));
   if (background) {
     const worker = spawnWorker(process.execPath, [fileURLToPath(new URL("./cli.js", import.meta.url)), "login", "--complete"],
                                { detached: true, stdio: ["pipe", "ignore", workerLog(file)] });
@@ -88,6 +114,7 @@ export async function login({ server = origin(), client = "yab-mcp", nonce, fetc
     });
     worker.unref();
     write("Show this code to the person now. Yab will connect after they allow it.\n");
+    write("If this computer ends background processes, any yab-mcp command run after they allow finishes connecting.\n");
     return;
   }
   await finishLogin(pending, { fetcher, sleep, write });
@@ -107,10 +134,12 @@ export async function finishLogin(pending, { fetcher = fetch, sleep = pause, wri
     await sleep(interval * 1000);
     const token = await form(server, "/oauth/token", { grant_type: GRANT, device_code, client_id: client }, fetcher);
     if (token.status === 200 && token.body.access_token && token.body.refresh_token) {
-      await saveAuth({ origin: server, client_id: client, access_token: token.body.access_token,
-                       refresh_token: token.body.refresh_token, expires_at: Date.now() + Number(token.body.expires_in || 0) * 1000 }, file);
+      const auth = { origin: server, client_id: client, access_token: token.body.access_token,
+                     refresh_token: token.body.refresh_token, expires_at: Date.now() + Number(token.body.expires_in || 0) * 1000 };
+      await saveAuth(auth, file);
+      await unlink(pendingFile(file)).catch(() => {});
       write("Connected to Yab.\n");
-      return;
+      return auth;
     }
     if (token.body.error === "authorization_pending") continue;
     if (token.body.error === "slow_down") { interval = Math.max(interval + 5, Number(token.body.interval) || 0); continue; }
@@ -123,10 +152,32 @@ export async function finishLogin(pending, { fetcher = fetch, sleep = pause, wri
 // refreshing together would log the second one out.
 const refreshing = new Map();
 
-async function usableAuth(server, fetcher, file) {
-  const auth = await loadAuth(file);
+/// The login a worker didn't live to finish: asks the server for a while
+/// (20 s by default) whether the person has allowed it yet.
+async function finishPending(server, fetcher, file, { sleep = pause, wait = 20_000 } = {}) {
+  const pending = await loadAuth(pendingFile(file));
+  if (!pending || pending.server !== server || !pending.device_code) return null;
+  if (Date.now() >= pending.until) {
+    await unlink(pendingFile(file)).catch(() => {});
+    throw new Error("The connection code expired before it was allowed. Run yab-mcp login again.");
+  }
+  try {
+    return await finishLogin({ ...pending, file, until: Math.min(pending.until, Date.now() + wait) }, { fetcher, sleep });
+  } catch (error) {
+    if (/expired/.test(error.message) && Date.now() < pending.until) {
+      throw new Error(`Yab hasn't been allowed yet. Ask the person to enter ${pending.user_code} in Yab on their Mac (Settings > AI > Assistants) and press Allow, then try again.`);
+    }
+    await unlink(pendingFile(file)).catch(() => {});
+    throw error;
+  }
+}
+
+async function usableAuth(server, fetcher, file, options) {
+  let auth = await loadAuth(file);
   if (!auth || auth.origin !== server || !auth.access_token || !auth.refresh_token || !auth.client_id) {
-    throw new Error("Yab is not connected here. Run yab-mcp login in this assistant's computer.");
+    auth = await finishPending(server, fetcher, file, options);
+    if (!auth) throw new Error("Yab is not connected here. Run yab-mcp login in this assistant's computer.");
+    return auth;
   }
   if (Date.now() < (auth.expires_at || 0) - 60_000) return auth;
   if (refreshing.has(file)) return refreshing.get(file);
@@ -148,9 +199,9 @@ async function usableAuth(server, fetcher, file) {
   try { return await work; } finally { refreshing.delete(file); }
 }
 
-export async function remoteCall(body, { server = origin(), fetcher = fetch, file = authFile() } = {}) {
+export async function remoteCall(body, { server = origin(), fetcher = fetch, file = authFile(), pending } = {}) {
   const base = origin(server);
-  let auth = await usableAuth(base, fetcher, file);
+  let auth = await usableAuth(base, fetcher, file, pending);
   const send = (token) => fetcher(base + "/mcp", { method: "POST", headers: {
     "content-type": "application/json", accept: "application/json, text/event-stream",
     "mcp-protocol-version": PROTOCOL, authorization: `Bearer ${token}`,
