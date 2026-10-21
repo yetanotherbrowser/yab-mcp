@@ -8,15 +8,27 @@ Yab, Yet Another Browser, is a free WebKit browser for the Mac. With this server
 
 ## Remote assistants (0.2.0 preview)
 
-On the assistant's own computer, run `npx yab-mcp login --client dots --nonce NONCE`.
+On the assistant's own computer, run `npx yab-mcp login --client dots`.
+When Yab's Connect flow supplies a nonce, add `--nonce` with that value.
 It prints the code and returns immediately; a background process saves the
 connection after the person allows it in Yab.
 Yab on the Mac shows the eight-character code under Settings > AI > Assistants.
-After the person allows it there, use `npx yab-mcp --remote` as a stdio MCP server,
-or `npx yab-mcp task "Find a table for Friday"` to give Yab one task.
-The task command prints its session ID and returns; a shell-only assistant can
-run `npx yab-mcp status SESSION` to wait for the next update, or omit SESSION
-to check its newest task after a Mac reconnects. Repeat until it says done.
+After the person allows it there, choose who does the work:
+
+- **Direct browser control:** configure your assistant's MCP server with command
+  `npx` and args `["-y", "yab-mcp", "--remote"]`. The assistant calls `open`,
+  `snapshot`, `click`, `type`, etc. itself, using its own model/account.
+  `--remote` bridges JSON-RPC over stdio; it does not accept a natural-language
+  prompt or start a Yab model run. Calling the `task` MCP tool still delegates.
+- **Delegation:** `npx yab-mcp task "Find a table for Friday"` starts a separate
+  agent using the model selected for Tasks in Yab on the Mac. ChatGPT (via Codex)
+  consumes the user's ChatGPT limits; Claude uses their Claude plan instead.
+  Choose this when you intend to use that plan, including from a shell-only bot.
+  It prints its session ID and returns; run `npx yab-mcp status SESSION` for the
+  next update, or `npx yab-mcp status` for the newest task after a Mac reconnects.
+  Repeat until it says done.
+
+Both modes keep the assistant's existing account access and approval settings.
 The connection token stays in `~/.config/yab-mcp/auth.json` (mode 0600), or the
 path in `YAB_MCP_AUTH_FILE`. When the home folder is read-only, as on some bots'
 computers, it goes to the first writable of `/workspace/shared/.yab-mcp/`,
@@ -24,7 +36,7 @@ computers, it goes to the first writable of `/workspace/shared/.yab-mcp/`,
 ends the background process that waits for the person's Allow, the next
 `task`, `status` or `--remote` finishes connecting.
 `YAB_MCP_URL` selects a test server; production uses `https://yab-sync.21st.workers.dev`.
-Without `--remote`, this package still uses the local Yab app exactly as before.
+Plain `npx yab-mcp` starts the local app's MCP server.
 
 ## Requirements
 

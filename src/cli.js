@@ -31,10 +31,26 @@ Usage:
   npx -y yab-mcp           Start the MCP server on stdio (an MCP client runs this)
   npx yab-mcp --help       Show this help and where Yab is
   npx yab-mcp --version    Show the version of yab-mcp
-  npx yab-mcp login --client dots --nonce NONCE  Link this assistant's computer to Yab
-  npx yab-mcp --remote      Serve remote Yab tools over stdio
-  npx yab-mcp task WORDS    Give remote Yab a task
-  npx yab-mcp status [SESSION]  Check a remote task; omit SESSION for the newest
+  npx yab-mcp login --client dots  Link this assistant's computer to Yab
+  npx yab-mcp --remote      Direct browser control through a stdio MCP client
+  npx yab-mcp task WORDS    Delegate to Yab's model; uses the user's plan limits
+  npx yab-mcp status [SESSION]  Check a delegated task; omit SESSION for the newest
+
+Choose how remote work runs after login:
+  --remote: your existing assistant calls open, snapshot, click, type, etc.
+    Configure its MCP server with command "npx", args ["-y", "yab-mcp", "--remote"].
+    This is a JSON-RPC stdio bridge, not a shell command that accepts task words.
+    Your assistant uses its own model/account; the bridge starts no Yab model run.
+    Calling the task MCP tool through this bridge still delegates as below.
+  task: hand the job to the model selected for Tasks in Yab on the Mac.
+    ChatGPT (via Codex) consumes the user's ChatGPT limits; Claude uses their
+    Claude plan instead. Choose this only when you intend that delegation.
+    Example: npx yab-mcp task "Find a table for Friday"
+    Then:    npx yab-mcp status SESSION  (use the returned session ID)
+    Or:      npx yab-mcp status          (newest task after a reconnect)
+
+Both modes keep the assistant's existing account access and approval settings.
+login also accepts --nonce NONCE when Yab's Connect flow supplies a real nonce.
 
 ${where}
 
