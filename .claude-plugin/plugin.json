@@ -1,7 +1,7 @@
 {
   "name": "yab",
   "displayName": "Yab, Yet Another Browser",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Your own signed-in browser on the Mac for Claude: open, read and act in tabs of Yab, Yet Another Browser. Local and free; the yes before Send, Pay and Delete is held by the browser.",
   "author": {
     "name": "Yab",

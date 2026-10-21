@@ -3,7 +3,7 @@
   "name": "com.yetanotherbrowser/yab",
   "title": "Yab, Yet Another Browser",
   "description": "Your own signed-in Mac browser for any agent: open, read and act in tabs. Local and free.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "websiteUrl": "https://yetanotherbrowser.com/developers",
   "repository": {
     "url": "https://github.com/yetanotherbrowser/yab-mcp",
@@ -21,7 +21,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "yab-mcp",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "transport": {
         "type": "stdio"
       }
